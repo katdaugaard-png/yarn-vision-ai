@@ -90,6 +90,29 @@ export const Route = createFileRoute("/widget.js")({
     } catch(_){}
   }
 
+  // Cache of known kit handles fetched from the catalog API.
+  // null = not yet fetched, Set = fetched (only handles in catalog are included).
+  var _knownHandles = null;
+
+  function fetchKnownHandles(cb){
+    if (_knownHandles !== null){ cb(_knownHandles); return; }
+    fetch(EXPECTED_ORIGIN + '/api/shopify-kits')
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        var s = new Set();
+        if (d && Array.isArray(d.kits)){
+          d.kits.forEach(function(k){ if (k.handle) s.add(k.handle); });
+        }
+        _knownHandles = s;
+        cb(s);
+      })
+      .catch(function(){
+        // On network error, fall back to showing the button (fail open).
+        _knownHandles = null;
+        cb(null);
+      });
+  }
+
   function renderProductButton(){
     var slot = document.getElementById('yarn-visualizer-button');
     if (!slot || slot.getAttribute('data-daugaard-mounted') === '1') return;
@@ -97,39 +120,49 @@ export const Route = createFileRoute("/widget.js")({
 
     var handle = getProductHandle();
 
-    // Outer wrapper provides top margin so it doesn't crowd "Læg i indkøbskurv"
-    var wrap = document.createElement('div');
-    wrap.style.cssText = 'margin-top:16px;width:100%;';
+    // Check catalog: only show button if this product handle is a known kit.
+    fetchKnownHandles(function(handles){
+      // If fetch failed (handles === null) we show the button anyway.
+      if (handles !== null && handle && !handles.has(handle)) {
+        try { console.log('Yarn visualizer: product not in catalog, hiding button', handle); } catch(_){}
+        return;
+      }
 
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.textContent = 'Se kittet i andre farver';
-    btn.setAttribute('aria-label','Se kittet i andre farver');
-    btn.style.cssText = [
-      'display:inline-flex','align-items:center','justify-content:center','gap:8px',
-      'width:100%',
-      'padding:12px 20px',
-      'background:transparent','color:#5a3a22',
-      'border:1px solid #c9b39a','border-radius:9999px',
-      'font-family:inherit','font-size:14px','font-weight:500','letter-spacing:.01em',
-      'cursor:pointer',
-      'box-shadow:none',
-      'transition:background .15s ease, border-color .15s ease, color .15s ease'
-    ].join(';');
-    btn.onmouseenter = function(){ btn.style.background = '#f5ede2'; btn.style.borderColor = '#b59976'; };
-    btn.onmouseleave = function(){ btn.style.background = 'transparent'; btn.style.borderColor = '#c9b39a'; };
-    btn.addEventListener('click', function(){ postOpen(handle); });
+      // Outer wrapper provides top margin so it doesn't crowd "Læg i indkøbskurv"
+      var wrap = document.createElement('div');
+      wrap.style.cssText = 'margin-top:16px;width:100%;';
 
-    var icon = document.createElement('span');
-    icon.textContent = '✨';
-    icon.style.cssText = 'font-size:13px;line-height:1;opacity:.8';
-    btn.insertBefore(icon, btn.firstChild);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = 'Se kittet i andre farver';
+      btn.setAttribute('aria-label','Se kittet i andre farver');
+      btn.style.cssText = [
+        'display:inline-flex','align-items:center','justify-content:center','gap:8px',
+        'width:100%',
+        'padding:12px 20px',
+        'background:transparent','color:#5a3a22',
+        'border:1px solid #c9b39a','border-radius:9999px',
+        'font-family:inherit','font-size:14px','font-weight:500','letter-spacing:.01em',
+        'cursor:pointer',
+        'box-shadow:none',
+        'transition:background .15s ease, border-color .15s ease, color .15s ease'
+      ].join(';');
+      btn.onmouseenter = function(){ btn.style.background = '#f5ede2'; btn.style.borderColor = '#b59976'; };
+      btn.onmouseleave = function(){ btn.style.background = 'transparent'; btn.style.borderColor = '#c9b39a'; };
+      btn.addEventListener('click', function(){ postOpen(handle); });
 
-    wrap.appendChild(btn);
-    slot.appendChild(wrap);
+      var icon = document.createElement('span');
+      icon.textContent = '\u2728';
+      icon.style.cssText = 'font-size:13px;line-height:1;opacity:.8';
+      btn.insertBefore(icon, btn.firstChild);
 
-    try { console.log('Yarn visualizer button mounted'); } catch(_){}
+      wrap.appendChild(btn);
+      slot.appendChild(wrap);
+
+      try { console.log('Yarn visualizer button mounted', handle); } catch(_){}
+    });
   }
+
 
   function watchForSlot(){
     renderProductButton();
