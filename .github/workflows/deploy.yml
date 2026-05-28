@@ -47,7 +47,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --config ./dist/server/wrangler.json --keep-vars
+          command: deploy --name yarn-vision-ai --config ./dist/server/wrangler.json --keep-vars
           secrets: |
             GEMINI_API_KEY
         env:
