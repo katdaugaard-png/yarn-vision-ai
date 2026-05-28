@@ -248,7 +248,7 @@ export const Route = createFileRoute("/api/recolor")({
 
         // Bump suffix when the prompt/logic changes meaningfully so old
         // bad cache entries are not served. v3 = collage-aware prompt.
-        const cacheKey = `${kitId}__${colorId}__v5.png`;
+        const cacheKey = `${kitId}__${colorId}__v6.png`;
 
         // 3) Cache hit? Returnér med det samme — ingen rate-limit, ingen AI-kald.
         const existing = await supabaseAdmin.storage
@@ -369,7 +369,8 @@ STRICT RULES — recolor ONLY the knitted garment(s):
 - If the first image is a collage / grid / multi-panel layout, you MUST recolor the knitted garment in EVERY SINGLE panel — top-left, top-right, bottom-left, bottom-right, close-ups, ALL of them. This is critical even when the panels show the garment in DIFFERENT starting colors (e.g. one brown panel + three green panels) — every panel must end up the SAME new target color. Do NOT leave any panel in its original color under any circumstances.
 - Replace the entire base color of every knitted garment with the EXACT dominant color sampled from the yarn skein. This is REQUIRED even if the garment already appears to be a similar shade — match the yarn's exact hue, saturation and lightness, do not keep the original tone.
 - The YARN IMAGE is the source of truth for the target color. Ignore assumptions from the garment's current color or from words like blue/blå in the product name if the yarn visually looks more gray, blue-gray, dusty, muted or slate-like.
-- For very light, pastel, blush, pink, lyserød, off-white or pale blue yarn colors, recolor the garment clearly and visibly to that pale yarn tone — a viewer must instantly see the new color. Do NOT leave the garment in its previous tone just because the change is subtle. If the target color name contains "Lyserød", "Pink", "Rosa" or "Blush", the final garment MUST read as a clear soft pink to any viewer, even if the original garment was a similar warm beige or sand tone.
+- PANEL COUNT RULE: Count the number of distinct photo panels in the input image BEFORE you start. If there are 4 panels, you MUST output exactly 4 recolored panels. If there are 3 panels, output 3. Never reduce the panel count. Verify your output has the same number of panels as the input before finishing.
+- For very light, pastel, blush, pink, lyserød, off-white or pale blue yarn colors, recolor the garment clearly and visibly to that pale yarn tone — a viewer must instantly see the new color. Do NOT leave the garment in its previous tone just because the change is subtle. If the target color name contains "Lyserød", "Pink", "Rosa" or "Blush", the final garment MUST read as a clear soft pink to any viewer, even if the original garment was a similar warm beige or sand tone. Treat this as a hard requirement: if you are unsure whether the color changed enough, make it MORE pink/pastel, not less.
 - For gray / grey / grå / lys grå / chambray / chambrey / havblå / blue-gray yarns, the final garment must visibly move toward a cooler, grayer, more muted tone sampled from the yarn. If the original garment already looks somewhat blue, but the yarn is grayer and duller, the result MUST become noticeably grayer and less saturated than the original.
 - DO NOT change: the model, skin, hair, face, hands, pose, background, lighting, shadows, wood buttons, fur blankets or props.
 - DO NOT change: any shirt, blouse, t-shirt, trousers, jewellery or other clothing worn UNDER or NEXT TO the knitted piece — keep their original colors exactly.
