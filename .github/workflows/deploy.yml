@@ -32,7 +32,6 @@ jobs:
             KV_ID=$(echo "$LIST" | python3 -c "import sys,json; ns=json.load(sys.stdin); print(next((n['id'] for n in ns if n.get('title','').endswith('RATE_LIMIT_KV')),''))" 2>/dev/null || true)
           fi
           echo "KV_ID=$KV_ID" >> $GITHUB_OUTPUT
-          echo "KV namespace ID: $KV_ID"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -43,9 +42,6 @@ jobs:
             sed -i "s/PLACEHOLDER_KV_ID/$KV_ID/g" wrangler.jsonc
           fi
       - run: npm run build
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
@@ -54,9 +50,5 @@ jobs:
           command: deploy --config ./dist/server/wrangler.json --keep-vars
           secrets: |
             GEMINI_API_KEY
-            VITE_SUPABASE_URL
-            VITE_SUPABASE_PUBLISHABLE_KEY
         env:
-          secrets: |
-            GEMINI_API_KEY
-
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
