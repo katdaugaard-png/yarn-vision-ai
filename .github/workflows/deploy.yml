@@ -14,41 +14,38 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - run: npm ci
-      - name: Create R2 bucket (idempotent)
+      - name: Create R2 bucket
         run: npx wrangler r2 bucket create yarn-recolor-cache || true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      - name: Create or find KV namespace
-        id: kv
+      - name: Create KV namespace and inject ID
         run: |
           OUTPUT=$(npx wrangler kv namespace create RATE_LIMIT_KV 2>&1 || true)
-          echo "$OUTPUT"
           KV_ID=$(echo "$OUTPUT" | grep -oP '"id":\s*"\K[^"]+' | head -1)
           if [ -z "$KV_ID" ]; then
-            LIST=$(npx wrangler kv namespace list 2>/dev/null || true)
-            KV_ID=$(echo "$LIST" | python3 -c "import sys,json; ns=json.load(sys.stdin); print(next((n['id'] for n in ns if n.get('title','').endswith('RATE_LIMIT_KV')),''))" 2>/dev/null || true)
+            LIST=$(npx wrangler kv namespace list 2>/dev/null || echo "[]")
+            KV_ID=$(echo "$LIST" | python3 -c "import sys,json; ns=json.load(sys.stdin); print(next((n['id'] for n in ns if 'RATE_LIMIT_KV' in n.get('title','')),''  ))" 2>/dev/null || true)
           fi
-          echo "KV_ID=$KV_ID" >> $GITHUB_OUTPUT
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      - name: Inject KV ID into wrangler.jsonc
-        run: |
-          KV_ID="${{ steps.kv.outputs.KV_ID }}"
+          echo "KV_ID=$KV_ID"
           if [ -n "$KV_ID" ]; then
             sed -i "s/PLACEHOLDER_KV_ID/$KV_ID/g" wrangler.jsonc
           fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - run: npm run build
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --name yarn-vision-ai --config ./dist/server/wrangler.json --keep-vars
-          secrets: |
-            GEMINI_API_KEY
+          command: deploy --config ./dist/server/wrangler.json --keep-vars
+      - name: Set GEMINI_API_KEY secret on Worker
+        run: echo "$GEMINI_API_KEY" | npx wrangler secret put GEMINI_API_KEY --name yarn-vision-ai
         env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
