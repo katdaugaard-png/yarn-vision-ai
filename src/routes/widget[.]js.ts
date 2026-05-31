@@ -107,7 +107,7 @@ export const Route = createFileRoute("/widget.js")({
         cb(s);
       })
       .catch(function(){
-        // On network error, fall back to showing the button (fail open).
+        // On network error, fall back to showing the button (fail closed).
         _knownHandles = null;
         cb(null);
       });
