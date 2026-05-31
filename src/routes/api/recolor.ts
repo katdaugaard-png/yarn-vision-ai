@@ -236,7 +236,7 @@ export const Route = createFileRoute("/api/recolor")({
           return Response.json({ error: "Invalid kitId/colorId" }, { status: 400 });
         }
 
-        const cacheKey = `${kitId}__${colorId}__v6.png`;
+        const cacheKey = `${kitId}__${colorId}__v7.png`;
 
         const cached = await r2CacheGet(cacheKey);
         if (cached) {
@@ -330,7 +330,7 @@ Output a single photorealistic image, same composition and same number of panels
                   { inlineData: { mimeType: yarnImage.mime, data: yarnImage.data } },
                   { text: promptText },
                 ]}],
-                generationConfig: { responseModalities: ["IMAGE"], temperature: 0.4 },
+                generationConfig: { responseModalities: ["IMAGE"], temperature: 1.0 },
                 safetySettings: [
                   { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
                   { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
