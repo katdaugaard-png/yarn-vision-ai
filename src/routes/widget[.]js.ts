@@ -123,7 +123,7 @@ export const Route = createFileRoute("/widget.js")({
     // Check catalog: only show button if this product handle is a known kit.
     fetchKnownHandles(function(handles){
       // If fetch failed (handles === null) we show the button anyway.
-      if (handles !== null && handle && !handles.has(handle)) {
+      if (!handle || !handles.has(handle)) {
         try { console.log('Yarn visualizer: product not in catalog, hiding button', handle); } catch(_){}
         return;
       }
